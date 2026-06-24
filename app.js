@@ -1,4 +1,33 @@
-const map = L.map('map').setView([39.9526, -75.1652], 18);
+// =========================
+// SprayTrack V0.4
+// Dashboard shell + working coverage
+// =========================
+
+// ---------- Settings ----------
+
+const SWATH_WIDTH_FEET = 6.0;
+const TARGET_SPEED_MPH = 3.0;
+const DUMMY_PRESSURE_PSI = 28;
+const DUMMY_RATE_GPA = 15;
+
+const FEET_TO_METERS = 0.3048;
+const SQ_METERS_PER_ACRE = 4046.8564224;
+
+const SWATH_WIDTH_METERS = SWATH_WIDTH_FEET * FEET_TO_METERS;
+
+// ---------- App State ----------
+
+let marker = null;
+let spraying = false;
+let lastSprayPoint = null;
+let coverageAreaSqMeters = 0;
+let coverageLayers = [];
+
+// ---------- Map ----------
+
+const map = L.map('map', {
+    zoomControl: true
+}).setView([39.9526, -75.1652], 18);
 
 L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -8,25 +37,43 @@ L.tileLayer(
     }
 ).addTo(map);
 
-let marker = null;
-let spraying = false;
-let lastSprayPoint = null;
-
-const SWATH_WIDTH_FEET = 6;
-const FEET_TO_METERS = 0.3048;
-const SWATH_WIDTH_METERS = SWATH_WIDTH_FEET * FEET_TO_METERS;
+// ---------- UI Elements ----------
 
 const sprayButton = document.getElementById("sprayButton");
+const clearButton = document.getElementById("clearButton");
+const sprayStatusPill = document.getElementById("sprayStatusPill");
+
+const gpsAccuracyEl = document.getElementById("gpsAccuracy");
+const speedEl = document.getElementById("speed");
+const actualSpeedCoachEl = document.getElementById("actualSpeedCoach");
+const swathWidthEl = document.getElementById("swathWidth");
+const areaCoveredEl = document.getElementById("areaCovered");
+const pressureEl = document.getElementById("pressure");
+const rateTargetEl = document.getElementById("rateTarget");
+const targetSpeedEl = document.getElementById("targetSpeed");
+const speedCoachStatusEl = document.getElementById("speedCoachStatus");
+const gpsQualityEl = document.getElementById("gpsQuality");
+
+// ---------- Initial UI ----------
+
+swathWidthEl.textContent = SWATH_WIDTH_FEET.toFixed(1);
+pressureEl.textContent = DUMMY_PRESSURE_PSI;
+rateTargetEl.textContent = DUMMY_RATE_GPA;
+targetSpeedEl.textContent = TARGET_SPEED_MPH.toFixed(1);
+
+// ---------- Controls ----------
 
 sprayButton.addEventListener("click", () => {
     spraying = !spraying;
-
-    sprayButton.textContent = spraying ? "Spray ON" : "Spray OFF";
-    sprayButton.className = spraying ? "spray-on" : "spray-off";
-
-    // Break the polygon chain when turning spraying off/on.
     lastSprayPoint = null;
+    updateSprayUi();
 });
+
+clearButton.addEventListener("click", () => {
+    clearCoverage();
+});
+
+// ---------- GPS Watch ----------
 
 navigator.geolocation.watchPosition(
     (position) => {
@@ -35,16 +82,22 @@ navigator.geolocation.watchPosition(
 
         const currentPoint = { lat, lon };
 
-        if (!marker) {
-            marker = L.marker([lat, lon]).addTo(map);
-            map.setView([lat, lon], 19);
-        } else {
-            marker.setLatLng([lat, lon]);
-        }
+        const speedMph = getSpeedMph(position);
+        const accuracyFt = position.coords.accuracy * 3.28084;
+
+        updatePositionMarker(currentPoint);
+        updateTelemetry(speedMph, accuracyFt);
 
         if (spraying) {
             if (lastSprayPoint) {
-                addSwathPolygon(lastSprayPoint, currentPoint, SWATH_WIDTH_METERS);
+                const addedArea = addSwathPolygon(
+                    lastSprayPoint,
+                    currentPoint,
+                    SWATH_WIDTH_METERS
+                );
+
+                coverageAreaSqMeters += addedArea;
+                updateAreaUi();
             }
 
             lastSprayPoint = currentPoint;
@@ -61,12 +114,87 @@ navigator.geolocation.watchPosition(
     }
 );
 
+// ---------- UI Update Functions ----------
+
+function updateSprayUi() {
+    sprayButton.textContent = spraying ? "Spray ON" : "Spray OFF";
+    sprayButton.className = spraying ? "spray-on" : "spray-off";
+
+    sprayStatusPill.textContent = spraying ? "● ON" : "● OFF";
+    sprayStatusPill.className = spraying
+        ? "status-pill status-on"
+        : "status-pill status-off";
+}
+
+function updateTelemetry(speedMph, accuracyFt) {
+    speedEl.textContent = speedMph.toFixed(1);
+    actualSpeedCoachEl.textContent = speedMph.toFixed(1);
+
+    gpsAccuracyEl.textContent = Math.round(accuracyFt);
+
+    if (accuracyFt <= 10) {
+        gpsQualityEl.textContent = "Good";
+    } else if (accuracyFt <= 25) {
+        gpsQualityEl.textContent = "Fair";
+    } else {
+        gpsQualityEl.textContent = "Poor";
+    }
+
+    updateSpeedCoach(speedMph);
+}
+
+function updateSpeedCoach(speedMph) {
+    const diff = speedMph - TARGET_SPEED_MPH;
+
+    if (Math.abs(diff) <= 0.4) {
+        speedCoachStatusEl.textContent = "ON TARGET";
+        speedCoachStatusEl.style.color = "#86efac";
+    } else if (diff > 0.4) {
+        speedCoachStatusEl.textContent = "SLOW DOWN";
+        speedCoachStatusEl.style.color = "#facc15";
+    } else {
+        speedCoachStatusEl.textContent = "SPEED UP";
+        speedCoachStatusEl.style.color = "#facc15";
+    }
+}
+
+function updateAreaUi() {
+    const acres = coverageAreaSqMeters / SQ_METERS_PER_ACRE;
+    areaCoveredEl.textContent = acres.toFixed(3);
+}
+
+function updatePositionMarker(point) {
+    if (!marker) {
+        marker = L.circleMarker([point.lat, point.lon], {
+            radius: 8,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: '#38bdf8',
+            fillOpacity: 1
+        }).addTo(map);
+
+        map.setView([point.lat, point.lon], 19);
+    } else {
+        marker.setLatLng([point.lat, point.lon]);
+    }
+}
+
+function clearCoverage() {
+    coverageLayers.forEach(layer => map.removeLayer(layer));
+    coverageLayers = [];
+    coverageAreaSqMeters = 0;
+    lastSprayPoint = null;
+    updateAreaUi();
+}
+
+// ---------- Coverage Geometry ----------
+
 function addSwathPolygon(pointA, pointB, widthMeters) {
     const distance = distanceMeters(pointA, pointB);
 
     // Ignore tiny GPS jitter.
     if (distance < 0.75) {
-        return;
+        return 0;
     }
 
     const halfWidth = widthMeters / 2;
@@ -80,21 +208,37 @@ function addSwathPolygon(pointA, pointB, widthMeters) {
     const bRight = offsetPoint(pointB, halfWidth, rightBearing);
     const bLeft = offsetPoint(pointB, halfWidth, leftBearing);
 
-L.polygon(
-    [
-        [aLeft.lat, aLeft.lon],
-        [bLeft.lat, bLeft.lon],
-        [bRight.lat, bRight.lon],
-        [aRight.lat, aRight.lon]
-    ],
-    {
-        stroke: false,
-        fillColor: '#facc15',
-        fillOpacity: 0.20,
-        interactive: false
-    }
-).addTo(map);
+    const polygon = L.polygon(
+        [
+            [aLeft.lat, aLeft.lon],
+            [bLeft.lat, bLeft.lon],
+            [bRight.lat, bRight.lon],
+            [aRight.lat, aRight.lon]
+        ],
+        {
+            stroke: false,
+            fillColor: '#f97316',
+            fillOpacity: 0.22,
+            interactive: false
+        }
+    ).addTo(map);
+
+    coverageLayers.push(polygon);
+
+    return distance * widthMeters;
 }
+
+// ---------- GPS Helpers ----------
+
+function getSpeedMph(position) {
+    if (position.coords.speed === null || position.coords.speed === undefined) {
+        return 0;
+    }
+
+    return position.coords.speed * 2.23694;
+}
+
+// ---------- Geo Math ----------
 
 function distanceMeters(pointA, pointB) {
     const earthRadius = 6371000;
@@ -128,13 +272,13 @@ function bearingRadians(pointA, pointB) {
     return Math.atan2(y, x);
 }
 
-function offsetPoint(point, distanceMeters, bearingRadiansValue) {
+function offsetPoint(point, distanceMetersValue, bearingRadiansValue) {
     const earthRadius = 6371000;
 
     const lat1 = degreesToRadians(point.lat);
     const lon1 = degreesToRadians(point.lon);
 
-    const angularDistance = distanceMeters / earthRadius;
+    const angularDistance = distanceMetersValue / earthRadius;
 
     const lat2 = Math.asin(
         Math.sin(lat1) * Math.cos(angularDistance) +
