@@ -89,8 +89,8 @@ L.polygon(
     ],
     {
         stroke: false,
-        fillColor: '#00ff66',
-        fillOpacity: 0.22,
+        fillColor: '#facc15',
+        fillOpacity: 0.20,
         interactive: false
     }
 ).addTo(map);
