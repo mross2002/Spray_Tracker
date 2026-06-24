@@ -1,0 +1,27 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #111827;
+}
+
+#header {
+    height: 60px;
+    background: #1f2937;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding-left: 20px;
+    box-sizing: border-box;
+}
+
+#header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+#map {
+    height: calc(100vh - 60px);
+    width: 100%;
+}
