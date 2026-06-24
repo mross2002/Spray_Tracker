@@ -10,15 +10,127 @@
 </head>
 <body>
 
-    <div id="header">
-        <h1>SprayTrack</h1>
+    <div id="appShell">
 
-        <button id="sprayButton" class="spray-off">
-            Spray OFF
-        </button>
+        <header id="topBar">
+            <div class="brand">
+                <div class="brand-title">SprayTrack</div>
+                <div class="brand-subtitle">Property Coverage</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">GPS Accuracy</div>
+                <div class="metric-value"><span id="gpsAccuracy">--</span> ft</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Speed</div>
+                <div class="metric-value"><span id="speed">0.0</span> mph</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Swath</div>
+                <div class="metric-value"><span id="swathWidth">6.0</span> ft</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Area</div>
+                <div class="metric-value"><span id="areaCovered">0.000</span> ac</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Pressure</div>
+                <div class="metric-value"><span id="pressure">28</span> PSI</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Rate Target</div>
+                <div class="metric-value"><span id="rateTarget">15</span> GPA</div>
+            </div>
+
+            <div id="sprayStatusPill" class="status-pill status-off">
+                ● OFF
+            </div>
+        </header>
+
+        <main id="mainArea">
+            <div id="map"></div>
+
+            <aside id="sidePanel">
+
+                <section class="panel-card job-card">
+                    <div class="section-label">Current Job</div>
+                    <div class="job-name">Front Yard Test</div>
+                    <div class="job-subtitle">Sprayer · 6.0 ft swath</div>
+                </section>
+
+                <section class="panel-card controls-card">
+                    <button id="sprayButton" class="spray-off">
+                        Spray OFF
+                    </button>
+
+                    <button id="clearButton" class="secondary-button">
+                        Clear Coverage
+                    </button>
+                </section>
+
+                <section class="panel-card">
+                    <div class="section-label">Guidance</div>
+                    <div class="guidance-row">
+                        <div class="guidance-arrow">◄</div>
+                        <div class="guidance-center">
+                            <div class="guidance-distance">0.0 ft</div>
+                            <div class="guidance-text">On Line</div>
+                        </div>
+                        <div class="guidance-arrow">►</div>
+                    </div>
+                    <div class="mini-track">
+                        <div class="track-line"></div>
+                        <div class="track-dot"></div>
+                    </div>
+                </section>
+
+                <section class="panel-card">
+                    <div class="section-label">Speed Coach</div>
+                    <div class="coach-status" id="speedCoachStatus">ON TARGET</div>
+                    <div class="coach-row">
+                        <span>Target</span>
+                        <strong><span id="targetSpeed">3.0</span> mph</strong>
+                    </div>
+                    <div class="coach-row">
+                        <span>Actual</span>
+                        <strong><span id="actualSpeedCoach">0.0</span> mph</strong>
+                    </div>
+                </section>
+
+                <section class="panel-card">
+                    <div class="section-label">GPS</div>
+                    <div class="info-row">
+                        <span>Mode</span>
+                        <strong>Phone GPS</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Fix Quality</span>
+                        <strong id="gpsQuality">Waiting</strong>
+                    </div>
+                </section>
+
+                <section class="panel-card">
+                    <div class="section-label">RTK</div>
+                    <div class="info-row">
+                        <span>Status</span>
+                        <strong>Not Connected</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Corrections</span>
+                        <strong>--</strong>
+                    </div>
+                </section>
+
+            </aside>
+        </main>
+
     </div>
-
-    <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="app.js"></script>
