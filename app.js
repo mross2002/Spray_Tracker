@@ -89,10 +89,10 @@ function addSwathPolygon(pointA, pointB, widthMeters) {
         ],
         {
             color: '#00ff66',
-            weight: 1,
-            opacity: 0.45,
+            weight: 0,
+            opacity: 0,
             fillColor: '#00ff66',
-            fillOpacity: 0.35
+            fillOpacity: 0.20
         }
     ).addTo(map);
 }
