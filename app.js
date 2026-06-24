@@ -80,21 +80,20 @@ function addSwathPolygon(pointA, pointB, widthMeters) {
     const bRight = offsetPoint(pointB, halfWidth, rightBearing);
     const bLeft = offsetPoint(pointB, halfWidth, leftBearing);
 
-    L.polygon(
-        [
-            [aLeft.lat, aLeft.lon],
-            [bLeft.lat, bLeft.lon],
-            [bRight.lat, bRight.lon],
-            [aRight.lat, aRight.lon]
-        ],
-        {
-            color: '#00ff66',
-            weight: 0,
-            opacity: 0,
-            fillColor: '#00ff66',
-            fillOpacity: 0.20
-        }
-    ).addTo(map);
+L.polygon(
+    [
+        [aLeft.lat, aLeft.lon],
+        [bLeft.lat, bLeft.lon],
+        [bRight.lat, bRight.lon],
+        [aRight.lat, aRight.lon]
+    ],
+    {
+        stroke: false,
+        fillColor: '#00ff66',
+        fillOpacity: 0.22,
+        interactive: false
+    }
+).addTo(map);
 }
 
 function distanceMeters(pointA, pointB) {
